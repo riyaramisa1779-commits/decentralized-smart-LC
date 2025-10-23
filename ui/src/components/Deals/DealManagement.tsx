@@ -273,7 +273,7 @@ const DealManagement: React.FC = () => {
                     <p className="text-white/70 mb-3">
                       {deal.goodsDescription}
                     </p>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                    <div className="grid grid-cols-1  gap-4 text-sm">
                       <div>
                         <p className="text-white/50">Importer</p>
                         <p className="text-white font-mono">{deal.importer}</p>
