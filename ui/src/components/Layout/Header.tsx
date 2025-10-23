@@ -1,6 +1,7 @@
 import React from 'react';
 import { useAccount, useDisconnect } from 'wagmi';
-import { Shield, LogOut, User, Settings } from 'lucide-react';
+import { Shield, LogOut, User } from 'lucide-react';
+import { NetworkStatus } from '../Network/NetworkStatus';
 
 const Header: React.FC = () => {
   const { address, isConnected } = useAccount();
@@ -34,6 +35,7 @@ const Header: React.FC = () => {
 
           {/* User Actions */}
           <div className="flex items-center space-x-4">
+            <NetworkStatus />
             {isConnected ? (
               <div className="flex items-center space-x-3">
                 <div className="flex items-center space-x-2 bg-white/10 rounded-lg px-3 py-2">
@@ -51,7 +53,7 @@ const Header: React.FC = () => {
                 </button>
               </div>
             ) : (
-              <w3m-button />
+              <w3m-connect-button />
             )}
           </div>
         </div>
