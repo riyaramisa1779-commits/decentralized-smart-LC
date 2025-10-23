@@ -8,7 +8,7 @@ import { defineChain } from 'viem'
 const projectId = import.meta.env.VITE_WALLETCONNECT_PROJECT_ID || 'YOUR_PROJECT_ID'
 
 // Define local Ganache network
-const ganache = defineChain({
+export const ganache = defineChain({
   id: 1337,
   name: 'Ganache',
   nativeCurrency: {

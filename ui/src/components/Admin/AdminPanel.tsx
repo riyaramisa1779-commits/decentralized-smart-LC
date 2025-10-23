@@ -9,14 +9,17 @@ import {
   AlertTriangle,
   Eye,
   Ban,
-  UserCheck
+  UserCheck,
+  Info
 } from 'lucide-react';
+import { useAdminData } from '../../hooks/useAdminData';
 
 const AdminPanel: React.FC = () => {
   const { address, isConnected } = useAccount();
   const [activeTab, setActiveTab] = useState<'users' | 'deals' | 'payments'>('users');
   
   const { writeContract, isPending } = useWriteContract();
+  const { pendingUsers, pendingDeals, loading, stats } = useAdminData();
 
   // Check if current user is admin
   const { data: adminAddress } = useReadContract({
@@ -26,50 +29,6 @@ const AdminPanel: React.FC = () => {
   });
 
   const isAdmin = adminAddress === address;
-
-  // Mock data for admin panel
-  const pendingUsers = [
-    {
-      address: '0x1234567890123456789012345678901234567890',
-      name: 'John Doe',
-      role: 'importer',
-      registeredAt: '2024-01-15',
-      verified: false
-    },
-    {
-      address: '0x2345678901234567890123456789012345678901',
-      name: 'Jane Smith',
-      role: 'exporter',
-      registeredAt: '2024-01-14',
-      verified: false
-    },
-    {
-      address: '0x3456789012345678901234567890123456789012',
-      name: 'ABC Bank',
-      role: 'bank',
-      registeredAt: '2024-01-13',
-      verified: false
-    }
-  ];
-
-  const pendingDeals = [
-    {
-      id: 1,
-      importer: '0x1234...5678',
-      exporter: '0x8765...4321',
-      goods: 'Electronics Components',
-      amount: '50 ETH',
-      status: 'pending_verification'
-    },
-    {
-      id: 2,
-      importer: '0x2345...6789',
-      exporter: '0x9876...5432',
-      goods: 'Textile Products',
-      amount: '75 ETH',
-      status: 'pending_delivery'
-    }
-  ];
 
   const handleVerifyUser = async (userAddress: string) => {
     if (!isAdmin) return;
@@ -122,7 +81,7 @@ const AdminPanel: React.FC = () => {
         <div className="text-center">
           <h2 className="text-2xl font-bold text-white mb-4">Connect Your Wallet</h2>
           <p className="text-white/70 mb-6">Please connect your wallet to access admin panel</p>
-          <w3m-button />
+          {/* <w3m-button /> */}
         </div>
       </div>
     );
@@ -157,7 +116,7 @@ const AdminPanel: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-white/70 text-sm">Pending Users</p>
-              <p className="text-2xl font-bold text-white">{pendingUsers.length}</p>
+              <p className="text-2xl font-bold text-white">{stats.pendingUsersCount}</p>
             </div>
             <Users className="h-8 w-8 text-blue-400" />
           </div>
@@ -166,7 +125,7 @@ const AdminPanel: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-white/70 text-sm">Pending Deals</p>
-              <p className="text-2xl font-bold text-white">{pendingDeals.length}</p>
+              <p className="text-2xl font-bold text-white">{stats.pendingDealsCount}</p>
             </div>
             <AlertTriangle className="h-8 w-8 text-yellow-400" />
           </div>
@@ -175,7 +134,7 @@ const AdminPanel: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-white/70 text-sm">Verified Users</p>
-              <p className="text-2xl font-bold text-white">42</p>
+              <p className="text-2xl font-bold text-white">{stats.verifiedUsersCount}</p>
             </div>
             <CheckCircle className="h-8 w-8 text-green-400" />
           </div>
@@ -184,7 +143,7 @@ const AdminPanel: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-white/70 text-sm">Flagged Users</p>
-              <p className="text-2xl font-bold text-white">3</p>
+              <p className="text-2xl font-bold text-white">{stats.flaggedUsersCount}</p>
             </div>
             <Ban className="h-8 w-8 text-red-400" />
           </div>
@@ -221,7 +180,31 @@ const AdminPanel: React.FC = () => {
         {activeTab === 'users' && (
           <div className="space-y-4">
             <h3 className="text-lg font-semibold text-white mb-4">Pending User Verifications</h3>
-            {pendingUsers.map((user) => (
+            
+            {/* Info Message */}
+            <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4 flex items-start space-x-3">
+              <Info className="h-5 w-5 text-blue-400 mt-0.5" />
+              <div>
+                <p className="text-blue-300 font-medium">Real-time Data Integration</p>
+                <p className="text-blue-200 text-sm mt-1">
+                  Admin panel now connects to the smart contract. User registrations and verifications will appear here automatically when users register through the system.
+                </p>
+              </div>
+            </div>
+
+            {loading ? (
+              <div className="text-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-4"></div>
+                <p className="text-white/70">Loading pending users...</p>
+              </div>
+            ) : pendingUsers.length === 0 ? (
+              <div className="text-center py-8">
+                <Users className="h-12 w-12 text-white/30 mx-auto mb-4" />
+                <p className="text-white/70">No pending user verifications</p>
+                <p className="text-white/50 text-sm mt-2">Users will appear here when they register through the system</p>
+              </div>
+            ) : (
+              pendingUsers.map((user) => (
               <div key={user.address} className="bg-white/5 rounded-lg p-4 border border-white/10">
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
@@ -258,7 +241,8 @@ const AdminPanel: React.FC = () => {
                   </div>
                 </div>
               </div>
-            ))}
+              ))
+            )}
           </div>
         )}
 
@@ -266,7 +250,31 @@ const AdminPanel: React.FC = () => {
         {activeTab === 'deals' && (
           <div className="space-y-4">
             <h3 className="text-lg font-semibold text-white mb-4">Pending Deal Verifications</h3>
-            {pendingDeals.map((deal) => (
+            
+            {/* Info Message */}
+            <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4 flex items-start space-x-3">
+              <Info className="h-5 w-5 text-blue-400 mt-0.5" />
+              <div>
+                <p className="text-blue-300 font-medium">Real-time Deal Monitoring</p>
+                <p className="text-blue-200 text-sm mt-1">
+                  Deal management now connects to the smart contract. New deals and delivery verifications will appear here automatically.
+                </p>
+              </div>
+            </div>
+
+            {loading ? (
+              <div className="text-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-4"></div>
+                <p className="text-white/70">Loading pending deals...</p>
+              </div>
+            ) : pendingDeals.length === 0 ? (
+              <div className="text-center py-8">
+                <CheckCircle className="h-12 w-12 text-white/30 mx-auto mb-4" />
+                <p className="text-white/70">No pending deal verifications</p>
+                <p className="text-white/50 text-sm mt-2">Deals requiring admin approval will appear here</p>
+              </div>
+            ) : (
+              pendingDeals.map((deal) => (
               <div key={deal.id} className="bg-white/5 rounded-lg p-4 border border-white/10">
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
@@ -312,7 +320,8 @@ const AdminPanel: React.FC = () => {
                   </div>
                 </div>
               </div>
-            ))}
+              ))
+            )}
           </div>
         )}
 

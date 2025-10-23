@@ -42,59 +42,39 @@ const Dashboard: React.FC = () => {
       value: dealCount?.toString() || '0',
       icon: FileText,
       color: 'bg-blue-500',
-      change: '+12%'
+      change: dealCount && dealCount > 0 ? '+' + dealCount.toString() : '0'
     },
     {
-      title: 'Active Users',
-      value: '156',
+      title: 'Your Role',
+      value: userRole || 'Not Registered',
       icon: Users,
       color: 'bg-green-500',
-      change: '+8%'
+      change: userData?.verified ? 'Verified' : 'Pending'
     },
     {
-      title: 'Escrow Value',
-      value: '$2.4M',
+      title: 'Wallet Connected',
+      value: address ? 'Yes' : 'No',
       icon: DollarSign,
       color: 'bg-purple-500',
-      change: '+23%'
+      change: address ? 'Active' : 'Disconnected'
     },
     {
-      title: 'Success Rate',
-      value: '94.2%',
+      title: 'Account Status',
+      value: userData?.verified ? 'Verified' : 'Pending',
       icon: TrendingUp,
-      color: 'bg-orange-500',
-      change: '+2.1%'
+      color: userData?.verified ? 'bg-green-500' : 'bg-orange-500',
+      change: userData?.name ? 'Registered' : 'Not Registered'
     }
   ];
 
+  // For now, show a simple message about real-time activity
   const recentActivity = [
     {
       id: 1,
-      type: 'deal_created',
-      message: 'New deal created by Importer ABC',
-      time: '2 hours ago',
-      status: 'pending'
-    },
-    {
-      id: 2,
-      type: 'payment_deposited',
-      message: 'Payment deposited for Deal #123',
-      time: '4 hours ago',
-      status: 'success'
-    },
-    {
-      id: 3,
-      type: 'user_verified',
-      message: 'User verification completed',
-      time: '6 hours ago',
-      status: 'success'
-    },
-    {
-      id: 4,
-      type: 'document_uploaded',
-      message: 'Shipping documents uploaded',
-      time: '8 hours ago',
-      status: 'warning'
+      type: 'info',
+      message: 'Connect your wallet and register to see activity',
+      time: 'Now',
+      status: 'info'
     }
   ];
 
