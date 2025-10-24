@@ -84,7 +84,7 @@ const Dashboard: React.FC = () => {
         <div className="text-center">
           <h2 className="text-2xl font-bold text-white mb-4">Connect Your Wallet</h2>
           <p className="text-white/70 mb-6">Please connect your wallet to access the dashboard</p>
-          <w3m-button />
+          {/* <w3m-button /> */}
         </div>
       </div>
     );
