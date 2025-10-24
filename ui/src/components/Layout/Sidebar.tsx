@@ -8,6 +8,7 @@ import {
   Settings,
   TrendingUp,
   Archive,
+  Package,
 } from "lucide-react";
 
 interface SidebarProps {
@@ -20,6 +21,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
     { id: "dashboard", label: "Dashboard", icon: Home },
     { id: "registration", label: "Registration", icon: Users },
     { id: "deals", label: "Deals", icon: FileText },
+    { id: "exporter", label: "Exporter", icon: Package },
     { id: "escrow", label: "Escrow", icon: DollarSign },
     { id: "documents", label: "Documents", icon: Archive },
     { id: "admin", label: "Admin Panel", icon: Shield },

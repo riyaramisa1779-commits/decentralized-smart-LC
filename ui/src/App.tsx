@@ -12,6 +12,7 @@ import DealManagement from './components/Deals/DealManagement';
 import EscrowManagement from './components/Escrow/EscrowManagement';
 import AdminPanel from './components/Admin/AdminPanel';
 import DocumentManagement from './components/Documents/DocumentManagement';
+import ExporterDashboard from './components/Exporter/ExporterDashboard';
 
 const queryClient = new QueryClient();
 
@@ -30,6 +31,8 @@ function App() {
         return <EscrowManagement />;
       case 'admin':
         return <AdminPanel />;
+      case 'exporter':
+        return <ExporterDashboard />;
       case 'documents':
         return <DocumentManagement />;
       case 'analytics':
