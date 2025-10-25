@@ -20,7 +20,7 @@ import ExporterDashboard from "../components/Exporter/ExporterDashboard";
 import EscrowManagement from "../components/Escrow/EscrowManagement";
 import DocumentManagement from "../components/Documents/DocumentManagement";
 import AdminPanel from "../components/Admin/AdminPanel";
-import { Analytics, Settings, NotFound } from "../pages";
+import NotFound from "../pages/NotFound";
 
 const queryClient = new QueryClient();
 
@@ -39,8 +39,6 @@ const AppRouter: React.FC = () => {
               <Route path="escrow" element={<EscrowManagement />} />
               <Route path="documents" element={<DocumentManagement />} />
               <Route path="admin" element={<AdminPanel />} />
-              <Route path="analytics" element={<Analytics />} />
-              <Route path="settings" element={<Settings />} />
               <Route path="*" element={<NotFound />} />
             </Route>
           </Routes>

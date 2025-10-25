@@ -6,8 +6,6 @@ import {
   Users,
   DollarSign,
   Shield,
-  Settings,
-  TrendingUp,
   Archive,
   Package,
 } from "lucide-react";
@@ -21,8 +19,6 @@ const Sidebar: React.FC = () => {
     // { path: "/escrow", label: "Escrow", icon: DollarSign },
     { path: "/documents", label: "Documents", icon: Archive },
     { path: "/admin", label: "Admin Panel", icon: Shield },
-    // { path: "/analytics", label: "Analytics", icon: TrendingUp },
-    // { path: "/settings", label: "Settings", icon: Settings },
   ];
 
   return (

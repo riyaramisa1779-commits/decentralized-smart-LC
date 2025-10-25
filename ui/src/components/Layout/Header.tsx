@@ -1,7 +1,7 @@
-import React from 'react';
-import { useAccount, useDisconnect } from 'wagmi';
-import { Shield, LogOut, User } from 'lucide-react';
-import { NetworkStatus } from '../Network/NetworkStatus';
+import React from "react";
+import { useAccount, useDisconnect } from "wagmi";
+import { Shield, LogOut, User } from "lucide-react";
+import { NetworkStatus } from "../Network/NetworkStatus";
 
 const Header: React.FC = () => {
   const { address, isConnected } = useAccount();
@@ -16,22 +16,6 @@ const Header: React.FC = () => {
             <Shield className="h-8 w-8 text-white" />
             <h1 className="text-xl font-bold text-white">Smart LC System</h1>
           </div>
-
-          {/* Navigation */}
-          <nav className="hidden md:flex space-x-8">
-            <a href="#dashboard" className="text-white/80 hover:text-white transition-colors">
-              Dashboard
-            </a>
-            <a href="#deals" className="text-white/80 hover:text-white transition-colors">
-              Deals
-            </a>
-            <a href="#documents" className="text-white/80 hover:text-white transition-colors">
-              Documents
-            </a>
-            <a href="#admin" className="text-white/80 hover:text-white transition-colors">
-              Admin
-            </a>
-          </nav>
 
           {/* User Actions */}
           <div className="flex items-center space-x-4">
@@ -53,7 +37,7 @@ const Header: React.FC = () => {
                 </button>
               </div>
             ) : (
-              <w3m-connect-button />
+              React.createElement("w3m-connect-button")
             )}
           </div>
         </div>
