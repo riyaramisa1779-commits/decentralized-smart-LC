@@ -8,13 +8,29 @@ import {
   CheckCircle, 
   Clock,
   AlertTriangle,
-  Hash
+  Hash,
+  X
 } from 'lucide-react';
+import { pinataService } from '../../services/pinata.service';
+import { validateFile, formatFileSize } from '../../utils/fileValidation';
+
+interface Document {
+  id: number;
+  name: string;
+  type: string;
+  hash: string;
+  uploadedAt: string;
+  status: 'verified' | 'pending' | 'rejected';
+  size: string;
+  dealId: number;
+}
 
 const DocumentManagement: React.FC = () => {
   const { isConnected } = useAccount();
   const [uploadingFile, setUploadingFile] = useState<File | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [uploadedDocuments, setUploadedDocuments] = useState<Document[]>([]);
 
   // Mock documents data
   const documents = [
@@ -54,20 +70,77 @@ const DocumentManagement: React.FC = () => {
     const file = event.target.files?.[0];
     if (!file) return;
 
+    // Validate file
+    const validation = validateFile(file);
+    if (!validation.valid) {
+      setUploadError(validation.error || 'Invalid file');
+      event.target.value = '';
+      return;
+    }
+
     setUploadingFile(file);
     setUploadProgress(0);
+    setUploadError(null);
 
-    // Simulate upload progress
-    const interval = setInterval(() => {
-      setUploadProgress(prev => {
-        if (prev >= 100) {
-          clearInterval(interval);
-          setUploadingFile(null);
-          return 100;
-        }
-        return prev + 10;
+    try {
+      // Upload to Pinata IPFS
+      const response = await pinataService.uploadFile(file, (progress) => {
+        setUploadProgress(progress.percentage);
       });
-    }, 200);
+
+      // Create new document entry
+      const newDocument: Document = {
+        id: Date.now(),
+        name: file.name,
+        type: file.type,
+        hash: response.IpfsHash,
+        uploadedAt: new Date().toISOString().split('T')[0],
+        status: 'pending',
+        size: formatFileSize(file.size),
+        dealId: 1, // You can make this dynamic based on selected deal
+      };
+
+      // Add to uploaded documents
+      setUploadedDocuments(prev => [newDocument, ...prev]);
+
+      // Reset upload state
+      setTimeout(() => {
+        setUploadingFile(null);
+        setUploadProgress(0);
+      }, 1000);
+
+    } catch (error) {
+      console.error('Upload error:', error);
+      setUploadError(error instanceof Error ? error.message : 'Failed to upload file');
+      setUploadingFile(null);
+      setUploadProgress(0);
+    }
+
+    // Reset file input
+    event.target.value = '';
+  };
+
+  const handleViewDocument = (hash: string) => {
+    const url = pinataService.getGatewayUrl(hash);
+    window.open(url, '_blank');
+  };
+
+  const handleDownloadDocument = async (hash: string, filename: string) => {
+    try {
+      const url = pinataService.getGatewayUrl(hash);
+      const response = await fetch(url);
+      const blob = await response.blob();
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(downloadUrl);
+    } catch (error) {
+      console.error('Download error:', error);
+    }
   };
 
   const getStatusIcon = (status: string) => {
@@ -156,6 +229,28 @@ const DocumentManagement: React.FC = () => {
                 style={{ width: `${uploadProgress}%` }}
               />
             </div>
+            {uploadProgress === 100 && (
+              <p className="text-green-400 text-sm mt-2">Upload complete!</p>
+            )}
+          </div>
+        )}
+
+        {/* Upload Error */}
+        {uploadError && (
+          <div className="mt-4 p-4 bg-red-500/10 border border-red-500/30 rounded-lg flex items-start justify-between">
+            <div className="flex items-start space-x-2">
+              <AlertTriangle className="h-5 w-5 text-red-400 mt-0.5" />
+              <div>
+                <p className="text-red-400 font-medium">Upload Failed</p>
+                <p className="text-red-300/70 text-sm mt-1">{uploadError}</p>
+              </div>
+            </div>
+            <button
+              onClick={() => setUploadError(null)}
+              className="text-red-400 hover:text-red-300"
+            >
+              <X className="h-4 w-4" />
+            </button>
           </div>
         )}
       </div>
@@ -164,7 +259,7 @@ const DocumentManagement: React.FC = () => {
       <div className="glass-effect rounded-xl p-6">
         <h2 className="text-xl font-bold text-white mb-6">Your Documents</h2>
         <div className="space-y-4">
-          {documents.map((doc) => (
+          {[...uploadedDocuments, ...documents].map((doc) => (
             <div key={doc.id} className="bg-white/5 rounded-lg p-4 border border-white/10">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-4">
@@ -190,10 +285,18 @@ const DocumentManagement: React.FC = () => {
                     <span className="capitalize">{doc.status}</span>
                   </span>
                   <div className="flex space-x-2">
-                    <button className="p-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
+                    <button 
+                      onClick={() => handleViewDocument(doc.hash)}
+                      className="p-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                      title="View document"
+                    >
                       <Eye className="h-4 w-4" />
                     </button>
-                    <button className="p-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors">
+                    <button 
+                      onClick={() => handleDownloadDocument(doc.hash, doc.name)}
+                      className="p-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
+                      title="Download document"
+                    >
                       <Download className="h-4 w-4" />
                     </button>
                   </div>

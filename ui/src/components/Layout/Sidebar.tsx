@@ -16,7 +16,7 @@ const Sidebar: React.FC = () => {
     { path: "/registration", label: "Registration", icon: Users },
     { path: "/deals", label: "Deals", icon: FileText },
     { path: "/exporter", label: "Exporter", icon: Package },
-    // { path: "/escrow", label: "Escrow", icon: DollarSign },
+    { path: "/escrow", label: "Escrow", icon: DollarSign },
     { path: "/documents", label: "Documents", icon: Archive },
     { path: "/admin", label: "Admin Panel", icon: Shield },
   ];

@@ -26,7 +26,7 @@ export const addGanacheToWallet = async () => {
             symbol: 'ETH',
             decimals: 18
           },
-          rpcUrls: ['http://127.0.0.1:8545'],
+          rpcUrls: ['http://127.0.0.1:7545'],
           blockExplorerUrls: null
         }]
       })

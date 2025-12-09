@@ -1,8 +1,7 @@
-import { useState, useEffect } from 'react';
-import { useReadContract } from 'wagmi';
+import { useState, useEffect, useCallback } from 'react';
+import { useReadContract, usePublicClient } from 'wagmi';
 import { CONTRACT_ADDRESS, CONTRACT_ABI } from '../config/contract';
 import { formatEther } from 'viem';
-import { readPaymentDetails } from '../utils/contractUtils';
 
 export interface Payment {
   dealId: number;
@@ -18,6 +17,7 @@ export interface Payment {
 export const usePayments = () => {
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
+  const publicClient = usePublicClient();
 
   // Get deal count to know how many potential payments there might be
   const { data: dealCount } = useReadContract({
@@ -26,21 +26,26 @@ export const usePayments = () => {
     functionName: 'dealCount',
   });
 
-  useEffect(() => {
-    const fetchPayments = async () => {
-      if (!dealCount || dealCount === 0n) {
-        setPayments([]);
-        setLoading(false);
-        return;
-      }
+  const fetchPayments = useCallback(async () => {
+    if (!publicClient || !dealCount || dealCount === 0n) {
+      setPayments([]);
+      setLoading(false);
+      return;
+    }
 
-      setLoading(true);
-      const paymentsData: Payment[] = [];
+    setLoading(true);
+    const paymentsData: Payment[] = [];
 
-      try {
-        // Check each deal for payment details
-        for (let i = 1; i <= Number(dealCount); i++) {
-          const paymentDetails = await readPaymentDetails(i);
+    try {
+      // Check each deal for payment details
+      for (let i = 1; i <= Number(dealCount); i++) {
+        try {
+          const paymentDetails = await publicClient.readContract({
+            address: CONTRACT_ADDRESS as `0x${string}`,
+            abi: CONTRACT_ABI,
+            functionName: 'getPaymentDetails',
+            args: [BigInt(i)]
+          }) as any;
           
           if (paymentDetails && paymentDetails.amount > 0n) {
             paymentsData.push({
@@ -54,17 +59,21 @@ export const usePayments = () => {
               createdAt: new Date().toISOString().split('T')[0]
             });
           }
+        } catch (error) {
+          // Payment doesn't exist for this deal
         }
-      } catch (error) {
-        console.error('Error fetching payments:', error);
       }
+    } catch (error) {
+      console.error('Error fetching payments:', error);
+    }
 
-      setPayments(paymentsData);
-      setLoading(false);
-    };
+    setPayments(paymentsData);
+    setLoading(false);
+  }, [publicClient, dealCount]);
 
+  useEffect(() => {
     fetchPayments();
-  }, [dealCount]);
+  }, [fetchPayments]);
 
   const getStatusFromPayment = (payment: Payment): Payment['status'] => {
     if (payment.status === 'loading') return 'loading';
@@ -98,8 +107,6 @@ export const usePayments = () => {
     totalReleased,
     totalRefunded,
     activeEscrows: paymentsWithStatus.filter(p => p.status === 'locked').length,
-    refetch: () => {
-      // Trigger refetch logic here
-    }
+    refetch: fetchPayments
   };
 };

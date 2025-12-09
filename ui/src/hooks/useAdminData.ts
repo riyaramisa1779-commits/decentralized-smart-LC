@@ -18,16 +18,35 @@ export interface PendingDeal {
   goods: string;
   amount: string;
   status: string;
+  documentHash?: string;
+  deliveryVerified: boolean;
+}
+
+export interface PendingPayment {
+  dealId: number;
+  payer: string;
+  payee: string;
+  amount: string;
+  released: boolean;
+  locked: boolean;
+  dealInfo?: {
+    goods: string;
+    importer: string;
+    exporter: string;
+  };
 }
 
 export const useAdminData = () => {
   const [pendingUsers, setPendingUsers] = useState<PendingUser[]>([]);
+  const [flaggedUsers, setFlaggedUsers] = useState<PendingUser[]>([]);
   const [pendingDeals, setPendingDeals] = useState<PendingDeal[]>([]);
+  const [pendingPayments, setPendingPayments] = useState<PendingPayment[]>([]);
   const [verifiedUsersCount, setVerifiedUsersCount] = useState(0);
   const [flaggedUsersCount, setFlaggedUsersCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [usersLoading, setUsersLoading] = useState(true);
   const [dealsLoading, setDealsLoading] = useState(true);
+  const [paymentsLoading, setPaymentsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const publicClient = usePublicClient();
@@ -72,6 +91,7 @@ export const useAdminData = () => {
       );
 
       const pendingUsersList: PendingUser[] = [];
+      const flaggedUsersList: PendingUser[] = [];
       let verifiedCount = 0;
       let flaggedCount = 0;
 
@@ -100,28 +120,31 @@ export const useAdminData = () => {
 
           const isVerified = verifiedAddresses.has(userAddress.toLowerCase());
 
+          // Get block timestamp for more accurate registration time
+          const block = await publicClient.getBlock({
+            blockNumber: log.blockNumber,
+          });
+
+          const userInfo: PendingUser = {
+            address: userAddress,
+            name: userDetails.name || "Unknown",
+            role: userRole,
+            registeredAt: new Date(
+              Number(block.timestamp) * 1000
+            ).toISOString(),
+            verified: isVerified,
+          };
+
           if (isFlagged) {
             flaggedCount++;
+            flaggedUsersList.push(userInfo);
           }
 
           if (isVerified) {
             verifiedCount++;
           } else {
             // Only add to pending if not verified
-            // Get block timestamp for more accurate registration time
-            const block = await publicClient.getBlock({
-              blockNumber: log.blockNumber,
-            });
-
-            pendingUsersList.push({
-              address: userAddress,
-              name: userDetails.name || "Unknown",
-              role: userRole,
-              registeredAt: new Date(
-                Number(block.timestamp) * 1000
-              ).toISOString(),
-              verified: false,
-            });
+            pendingUsersList.push(userInfo);
           }
         } catch (error) {
           console.error(
@@ -132,6 +155,7 @@ export const useAdminData = () => {
       }
 
       setPendingUsers(pendingUsersList);
+      setFlaggedUsers(flaggedUsersList);
       setVerifiedUsersCount(verifiedCount);
       setFlaggedUsersCount(flaggedCount);
     } catch (error) {
@@ -195,6 +219,8 @@ export const useAdminData = () => {
               goods: dealDetails.goodsDescription,
               amount: formatEther(dealDetails.amount),
               status,
+              documentHash: dealDetails.documentHash,
+              deliveryVerified: dealDetails.deliveryVerified,
             });
           }
         } catch (error) {
@@ -222,29 +248,94 @@ export const useAdminData = () => {
     fetchPendingDeals();
   }, [fetchPendingDeals]);
 
+  // Fetch pending payments (locked escrow payments)
+  const fetchPendingPayments = useCallback(async () => {
+    if (!publicClient || !dealCount) return;
+
+    setPaymentsLoading(true);
+    try {
+      const pendingPaymentsList: PendingPayment[] = [];
+      const totalDeals = Number(dealCount);
+
+      for (let i = 1; i <= totalDeals; i++) {
+        try {
+          const paymentDetails = (await publicClient.readContract({
+            address: CONTRACT_ADDRESS as `0x${string}`,
+            abi: CONTRACT_ABI,
+            functionName: "getPaymentDetails",
+            args: [BigInt(i)],
+          })) as any;
+
+          // Only include payments that are locked (awaiting admin action)
+          if (paymentDetails.locked && !paymentDetails.released) {
+            const dealDetails = (await publicClient.readContract({
+              address: CONTRACT_ADDRESS as `0x${string}`,
+              abi: CONTRACT_ABI,
+              functionName: "getDealDetails",
+              args: [BigInt(i)],
+            })) as any;
+
+            pendingPaymentsList.push({
+              dealId: i,
+              payer: paymentDetails.payer,
+              payee: paymentDetails.payee,
+              amount: formatEther(paymentDetails.amount),
+              released: paymentDetails.released,
+              locked: paymentDetails.locked,
+              dealInfo: {
+                goods: dealDetails.goodsDescription,
+                importer: dealDetails.importer,
+                exporter: dealDetails.exporter,
+              },
+            });
+          }
+        } catch (error) {
+          // Payment might not exist for this deal
+        }
+      }
+
+      setPendingPayments(pendingPaymentsList);
+    } catch (error) {
+      console.error("Error fetching pending payments:", error);
+      setPendingPayments([]);
+    } finally {
+      setPaymentsLoading(false);
+    }
+  }, [publicClient, dealCount]);
+
+  // Effect for fetching payments
+  useEffect(() => {
+    fetchPendingPayments();
+  }, [fetchPendingPayments]);
+
   // Update overall loading state
   useEffect(() => {
-    setLoading(usersLoading || dealsLoading);
-  }, [usersLoading, dealsLoading]);
+    setLoading(usersLoading || dealsLoading || paymentsLoading);
+  }, [usersLoading, dealsLoading, paymentsLoading]);
 
   // Helper function to refresh all data
   const refetchAll = useCallback(async () => {
-    await Promise.all([fetchPendingUsers(), fetchPendingDeals()]);
-  }, [fetchPendingUsers, fetchPendingDeals]);
+    await Promise.all([fetchPendingUsers(), fetchPendingDeals(), fetchPendingPayments()]);
+  }, [fetchPendingUsers, fetchPendingDeals, fetchPendingPayments]);
 
   return {
     pendingUsers,
+    flaggedUsers,
     pendingDeals,
+    pendingPayments,
     loading,
     usersLoading,
     dealsLoading,
+    paymentsLoading,
     error,
     refetchUsers: fetchPendingUsers,
     refetchDeals: fetchPendingDeals,
+    refetchPayments: fetchPendingPayments,
     refetchAll,
     stats: {
       pendingUsersCount: pendingUsers.length,
       pendingDealsCount: pendingDeals.length,
+      pendingPaymentsCount: pendingPayments.length,
       verifiedUsersCount,
       flaggedUsersCount,
     },

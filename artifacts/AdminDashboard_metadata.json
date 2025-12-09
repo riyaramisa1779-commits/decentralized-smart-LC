@@ -1,0 +1,65 @@
+{
+	"compiler": {
+		"version": "0.8.30+commit.73712a01"
+	},
+	"language": "Solidity",
+	"output": {
+		"abi": [
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "",
+						"type": "address"
+					}
+				],
+				"name": "flaggedUsers",
+				"outputs": [
+					{
+						"internalType": "bool",
+						"name": "",
+						"type": "bool"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			}
+		],
+		"devdoc": {
+			"kind": "dev",
+			"methods": {},
+			"version": 1
+		},
+		"userdoc": {
+			"kind": "user",
+			"methods": {},
+			"version": 1
+		}
+	},
+	"settings": {
+		"compilationTarget": {
+			"smart-contract/contracts/smartlc.sol": "AdminDashboard"
+		},
+		"evmVersion": "paris",
+		"libraries": {},
+		"metadata": {
+			"bytecodeHash": "ipfs"
+		},
+		"optimizer": {
+			"enabled": true,
+			"runs": 200
+		},
+		"remappings": []
+	},
+	"sources": {
+		"smart-contract/contracts/smartlc.sol": {
+			"keccak256": "0xd6edfff8deeb1dea8b9e77bc37a01cd62cf07ff152d1be8a3ec98ef69520f747",
+			"license": "MIT",
+			"urls": [
+				"bzz-raw://97cfd3199b50dc06e911a676dc8454e191d64117f5f40a362c082a7e7bde3f2e",
+				"dweb:/ipfs/QmcVaiTEMkuPzRkhcXNbJg9f4VDK4763qaDNLQGEVR3q4e"
+			]
+		}
+	},
+	"version": 1
+}

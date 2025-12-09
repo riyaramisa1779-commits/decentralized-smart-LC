@@ -18,7 +18,7 @@ export const ganache = defineChain({
   },
   rpcUrls: {
     default: {
-      http: ['http://127.0.0.1:8545'],
+      http: ['http://127.0.0.1:7545'],
     },
   },
   blockExplorers: {

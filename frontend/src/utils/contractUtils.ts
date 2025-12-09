@@ -5,7 +5,7 @@ import { CONTRACT_ADDRESS, CONTRACT_ABI } from '../config/contract';
 // Create a public client for reading contract data
 const publicClient = createPublicClient({
   chain: ganache,
-  transport: http('http://127.0.0.1:8545')
+  transport: http('http://127.0.0.1:7545')
 });
 
 export const readDealDetails = async (dealId: number) => {
