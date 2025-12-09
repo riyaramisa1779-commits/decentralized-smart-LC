@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useAccount, useWriteContract, useWaitForTransactionReceipt, useReadContract } from 'wagmi';
 import { CONTRACT_ADDRESS, CONTRACT_ABI } from '../../config/contract';
-import { User, Building, Truck, CheckCircle, AlertCircle, Shield, Upload, FileText, X } from 'lucide-react';
+import { User, Building, Truck, CheckCircle, AlertCircle, Shield, Upload, FileText, X, Loader2 } from 'lucide-react';
+import { uploadKYCDocuments } from '../../services/pinata';
 
 const UserRegistration: React.FC = () => {
   const { address, isConnected } = useAccount();
@@ -11,6 +12,19 @@ const UserRegistration: React.FC = () => {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [kycFiles, setKycFiles] = useState<File[]>([]);
+  const [uploadStatus, setUploadStatus] = useState<{
+    uploading: boolean;
+    success: boolean;
+    error: string | null;
+    ipfsHashes: string[];
+    metadataHash: string | null;
+  }>({
+    uploading: false,
+    success: false,
+    error: null,
+    ipfsHashes: [],
+    metadataHash: null,
+  });
 
   const { writeContract, data: hash, error, isPending } = useWriteContract();
 
@@ -44,15 +58,58 @@ const UserRegistration: React.FC = () => {
 
     try {
       setIsSubmitting(true);
-      // Note: KYC files are for display only, not sent to blockchain
+      setUploadStatus({ uploading: false, success: false, error: null, ipfsHashes: [], metadataHash: null });
+
+      // Upload KYC documents to Pinata if files are present
+      let kycMetadataHash = '';
+      if (kycFiles.length > 0) {
+        setUploadStatus(prev => ({ ...prev, uploading: true }));
+        
+        try {
+          const uploadResult = await uploadKYCDocuments(
+            kycFiles,
+            address as string,
+            formData.name
+          );
+          
+          kycMetadataHash = uploadResult.metadataHash;
+          
+          setUploadStatus({
+            uploading: false,
+            success: true,
+            error: null,
+            ipfsHashes: uploadResult.files.map(f => f.IpfsHash),
+            metadataHash: uploadResult.metadataHash,
+          });
+          
+          console.log('KYC Documents uploaded to IPFS:', {
+            files: uploadResult.files,
+            metadataHash: uploadResult.metadataHash,
+          });
+        } catch (uploadError) {
+          const errorMessage = uploadError instanceof Error ? uploadError.message : 'Failed to upload documents';
+          setUploadStatus(prev => ({ ...prev, uploading: false, error: errorMessage }));
+          console.error('Upload error:', uploadError);
+          return; // Don't proceed with registration if upload fails
+        }
+      }
+
+      // Register user on blockchain
       writeContract({
         address: CONTRACT_ADDRESS as `0x${string}`,
         abi: CONTRACT_ABI,
         functionName: 'registerNewUser',
         args: [formData.name, formData.role],
       });
+
+      // Note: In a production system, you would also store the kycMetadataHash
+      // either in the smart contract or in a backend database linked to the user's address
+      if (kycMetadataHash) {
+        console.log('Store this metadata hash for user verification:', kycMetadataHash);
+      }
     } catch (err) {
       console.error('Registration error:', err);
+      setUploadStatus(prev => ({ ...prev, error: 'Registration failed' }));
     } finally {
       setIsSubmitting(false);
     }
@@ -150,6 +207,41 @@ const UserRegistration: React.FC = () => {
           <h1 className="text-3xl font-bold text-white mb-2">User Registration</h1>
           <p className="text-white/70">Join the decentralized LC ecosystem</p>
         </div>
+
+        {uploadStatus.uploading && (
+          <div className="mb-6 p-4 bg-blue-500/20 border border-blue-500/30 rounded-lg flex items-center space-x-3">
+            <Loader2 className="h-5 w-5 text-blue-400 animate-spin" />
+            <div>
+              <p className="text-blue-400 font-medium">Uploading KYC Documents to IPFS...</p>
+              <p className="text-blue-300 text-sm">Please wait while we securely store your documents.</p>
+            </div>
+          </div>
+        )}
+
+        {uploadStatus.success && uploadStatus.metadataHash && (
+          <div className="mb-6 p-4 bg-green-500/20 border border-green-500/30 rounded-lg">
+            <div className="flex items-center space-x-3 mb-2">
+              <CheckCircle className="h-5 w-5 text-green-400" />
+              <p className="text-green-400 font-medium">Documents Uploaded Successfully!</p>
+            </div>
+            <p className="text-green-300 text-sm mb-2">Your KYC documents are securely stored on IPFS.</p>
+            <div className="bg-green-500/10 rounded p-2 mt-2">
+              <p className="text-green-200 text-xs font-mono break-all">
+                Metadata Hash: {uploadStatus.metadataHash}
+              </p>
+            </div>
+          </div>
+        )}
+
+        {uploadStatus.error && (
+          <div className="mb-6 p-4 bg-red-500/20 border border-red-500/30 rounded-lg flex items-center space-x-3">
+            <AlertCircle className="h-5 w-5 text-red-400" />
+            <div>
+              <p className="text-red-400 font-medium">Upload Failed</p>
+              <p className="text-red-300 text-sm">{uploadStatus.error}</p>
+            </div>
+          </div>
+        )}
 
         {isConfirmed && (
           <div className="mb-6 p-4 bg-green-500/20 border border-green-500/30 rounded-lg flex items-center space-x-3">
@@ -277,9 +369,13 @@ const UserRegistration: React.FC = () => {
               </div>
             )}
 
-            <p className="text-white/40 text-xs mt-2 italic">
-              Note: This is a demonstration field. Files are not uploaded to the blockchain.
-            </p>
+            <div className="mt-3 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+              <p className="text-blue-300 text-xs font-medium mb-1">🔒 Secure IPFS Storage via Pinata</p>
+              <p className="text-blue-200 text-xs">
+                Your documents will be encrypted and stored on IPFS (InterPlanetary File System) 
+                using Pinata, ensuring decentralized and tamper-proof storage.
+              </p>
+            </div>
           </div>
 
           {/* Submit Button */}
